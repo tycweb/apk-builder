@@ -197,13 +197,26 @@ app.post("/api/build", upload.single("projectZip"), async (req, res) => {
     const owner = parseWhoamiOutput(whoamiOut);
     await patchOwner(projectDir, owner);
 
-    // Link (or re-link) this project to an EAS project under the token's account.
+    // Link this project to an EAS project under the token's account.
+    // Different eas-cli versions accept slightly different flags here, so
+    // try the plain form first, then --force as a fallback. If neither
+    // works, stop now with the real reason instead of silently continuing
+    // to `build`, which would just fail again with a more confusing,
+    // unrelated-looking "EAS project not configured" error.
+    let initError = null;
     try {
-      await runCli(["init", "--non-interactive", "--force"], projectDir, expoToken);
-    } catch (e) {
-      // Non-fatal: some accounts/projects are already linked and `init` errors
-      // out harmlessly in that case. We proceed and let `build` surface any
-      // real problem.
+      await runCli(["init", "--non-interactive"], projectDir, expoToken);
+    } catch (e1) {
+      initError = e1;
+      try {
+        await runCli(["init", "--non-interactive", "--force"], projectDir, expoToken);
+        initError = null;
+      } catch (e2) {
+        initError = e2;
+      }
+    }
+    if (initError) {
+      throw new Error("eas init failed: " + initError.message);
     }
 
     const stdout = await runCli(
