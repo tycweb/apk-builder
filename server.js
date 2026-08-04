@@ -58,13 +58,19 @@ function runCli(args, cwd, token) {
       [...args],
       {
         cwd,
-        env: { ...process.env, EXPO_TOKEN: token, CI: "1" },
+        // EXPO_DEBUG surfaces the actual underlying error instead of eas-cli's
+        // generic "X command failed" wrapper message.
+        env: { ...process.env, EXPO_TOKEN: token, CI: "1", EXPO_DEBUG: "1" },
         maxBuffer: 1024 * 1024 * 20,
         timeout: 5 * 60 * 1000, // eas build --no-wait should return fast; 5 min safety net
       },
       (error, stdout, stderr) => {
         if (error) {
-          reject(new Error(stderr || stdout || error.message));
+          // Keep both streams — eas-cli sometimes puts the real cause on
+          // stdout and only a generic wrapper message on stderr, or vice
+          // versa. Dropping either one hides the actual reason.
+          const combined = [stdout, stderr].filter(Boolean).join("\n---\n");
+          reject(new Error(combined || error.message));
         } else {
           resolve(stdout);
         }
