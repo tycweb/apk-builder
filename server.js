@@ -141,6 +141,18 @@ async function patchPackageName(projectDir, packageName) {
   await fs.writeJson(appJsonPath, appJson, { spaces: 2 });
 }
 
+async function patchProjectId(projectDir, projectId) {
+  if (!projectId) return;
+  const appJsonPath = path.join(projectDir, "app.json");
+  if (!(await fs.pathExists(appJsonPath))) return;
+  const appJson = await fs.readJson(appJsonPath);
+  appJson.expo = appJson.expo || {};
+  appJson.expo.extra = appJson.expo.extra || {};
+  appJson.expo.extra.eas = appJson.expo.extra.eas || {};
+  appJson.expo.extra.eas.projectId = projectId;
+  await fs.writeJson(appJsonPath, appJson, { spaces: 2 });
+}
+
 function findProjectRoot(dir) {
   // Handles zips where everything sits inside one wrapper folder,
   // e.g. my-project/package.json instead of package.json at the zip root.
@@ -157,7 +169,7 @@ function findProjectRoot(dir) {
 // ---------- main build endpoint ----------
 
 app.post("/api/build", upload.single("projectZip"), async (req, res) => {
-  const { expoToken, packageName } = req.body;
+  const { expoToken, packageName, projectId } = req.body;
   const uploadedZip = req.file;
 
   if (!expoToken) {
@@ -203,26 +215,32 @@ app.post("/api/build", upload.single("projectZip"), async (req, res) => {
     const owner = parseWhoamiOutput(whoamiOut);
     await patchOwner(projectDir, owner);
 
-    // Link this project to an EAS project under the token's account.
-    // Different eas-cli versions accept slightly different flags here, so
-    // try the plain form first, then --force as a fallback. If neither
-    // works, stop now with the real reason instead of silently continuing
-    // to `build`, which would just fail again with a more confusing,
-    // unrelated-looking "EAS project not configured" error.
-    let initError = null;
-    try {
-      await runCli(["init", "--non-interactive"], projectDir, expoToken);
-    } catch (e1) {
-      initError = e1;
+    if (projectId) {
+      // Attach directly to a project you already created on expo.dev.
+      // Personal access tokens on team accounts often can't CREATE new
+      // projects (even as Admin), so we skip `eas init`'s create step
+      // entirely here instead of hitting that permission wall.
+      await patchProjectId(projectDir, projectId);
+    } else {
+      // Fall back to letting eas-cli create/link a project automatically.
+      // This works fine for personal (non-team) accounts; team accounts may
+      // hit a permissions error here — if so, create a project manually on
+      // expo.dev and pass its ID in instead.
+      let initError = null;
       try {
-        await runCli(["init", "--non-interactive", "--force"], projectDir, expoToken);
-        initError = null;
-      } catch (e2) {
-        initError = e2;
+        await runCli(["init", "--non-interactive"], projectDir, expoToken);
+      } catch (e1) {
+        initError = e1;
+        try {
+          await runCli(["init", "--non-interactive", "--force"], projectDir, expoToken);
+          initError = null;
+        } catch (e2) {
+          initError = e2;
+        }
       }
-    }
-    if (initError) {
-      throw new Error("eas init failed: " + initError.message);
+      if (initError) {
+        throw new Error("eas init failed: " + initError.message);
+      }
     }
 
     const stdout = await runCli(
