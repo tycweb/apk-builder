@@ -50,6 +50,16 @@
       <input id="package-input" type="text" placeholder="com.yourname.appname" />
     </div>
 
+    <div class="field">
+      <label for="projectid-input">Expo project ID <span class="optional">(optional, but required for team accounts)</span></label>
+      <input id="projectid-input" type="text" placeholder="e.g. a1b2c3d4-e5f6-7890-abcd-ef1234567890" />
+      <p class="hint">
+        Team accounts usually can't auto-create a project from a token. Create one manually at
+        <a href="https://expo.dev" target="_blank" rel="noopener">expo.dev</a> → your account → "Create a project",
+        then paste its Project ID (Configuration tab) here.
+      </p>
+    </div>
+
     <div id="dropzone" class="dropzone">
       <div class="dropzone-icon">↑</div>
       <p class="dropzone-title">Drop your Expo project ZIP here</p>

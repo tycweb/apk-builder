@@ -3,6 +3,7 @@
   const tokenToggle = document.getElementById("token-toggle");
   const rememberToken = document.getElementById("remember-token");
   const packageInput = document.getElementById("package-input");
+  const projectIdInput = document.getElementById("projectid-input");
   const dropzone = document.getElementById("dropzone");
   const fileInput = document.getElementById("file-input");
   const selectedFileEl = document.getElementById("selected-file");
@@ -225,6 +226,7 @@
     const formData = new FormData();
     formData.append("expoToken", token);
     formData.append("packageName", packageInput.value.trim());
+    formData.append("projectId", projectIdInput.value.trim());
     formData.append("projectZip", selectedFile);
 
     try {
