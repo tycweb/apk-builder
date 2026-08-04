@@ -104,6 +104,26 @@ async function ensureEasJson(projectDir) {
   await fs.writeJson(easPath, easJson, { spaces: 2 });
 }
 
+async function patchOwner(projectDir, owner) {
+  if (!owner) return;
+  const appJsonPath = path.join(projectDir, "app.json");
+  if (!(await fs.pathExists(appJsonPath))) return;
+  const appJson = await fs.readJson(appJsonPath);
+  appJson.expo = appJson.expo || {};
+  appJson.expo.owner = owner;
+  await fs.writeJson(appJsonPath, appJson, { spaces: 2 });
+}
+
+function parseWhoamiOutput(stdout) {
+  // eas-cli sometimes prints update-check noise ("eas-cli@X is now
+  // available...") above the actual answer, so take the last non-empty line.
+  const lines = stdout
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  return lines.length ? lines[lines.length - 1] : null;
+}
+
 async function patchPackageName(projectDir, packageName) {
   if (!packageName) return;
   const appJsonPath = path.join(projectDir, "app.json");
@@ -169,8 +189,13 @@ app.post("/api/build", upload.single("projectZip"), async (req, res) => {
     await patchPackageName(projectDir, packageName);
     await ensureEasJson(projectDir);
 
-    // Confirm the token actually works before we burn a build slot on a typo.
-    await runCli(["whoami"], projectDir, expoToken);
+    // Confirm the token actually works before we burn a build slot on a typo,
+    // and capture the account name — personal access tokens are treated as
+    // "robot tokens" by EAS, which require an explicit `expo.owner` in
+    // app.json or the build fails with an ownership-mismatch error.
+    const whoamiOut = await runCli(["whoami"], projectDir, expoToken);
+    const owner = parseWhoamiOutput(whoamiOut);
+    await patchOwner(projectDir, owner);
 
     // Link (or re-link) this project to an EAS project under the token's account.
     try {
