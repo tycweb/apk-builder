@@ -127,7 +127,16 @@ function parseWhoamiOutput(stdout) {
     .split("\n")
     .map((l) => l.trim())
     .filter(Boolean);
-  return lines.length ? lines[lines.length - 1] : null;
+  const lastLine = lines.length ? lines[lines.length - 1] : "";
+  if (!lastLine) return null;
+  // Strip a leading bullet/checkmark icon ("•", "✔", "✓", "-", "*") and any
+  // trailing descriptive suffix like "(Role: Admin)" — we only want the
+  // bare account slug (e.g. "tycepts-team"), since that's what has to match
+  // the project's actual owner exactly.
+  return lastLine
+    .replace(/^[•✔✓\-*]\s*/, "")
+    .replace(/\s*\([^)]*\)\s*$/, "")
+    .trim() || null;
 }
 
 async function patchPackageName(projectDir, packageName) {
