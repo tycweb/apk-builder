@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ApkForge — build APKs with your own Expo account</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">⛨</span>
+    <span class="brand-name">ApkForge</span>
+  </div>
+  <span class="brand-sub">runs on your Expo account, not ours</span>
+</header>
+
+<main class="wrap">
+
+  <section class="card">
+    <h1>Turn an Expo project into an APK</h1>
+    <p class="lede">
+      This uploads your project to <strong>Expo's own EAS Build</strong> service using
+      your account's free build quota. No third-party build limits — the quota is
+      whatever your Expo account has.
+    </p>
+
+    <div class="field">
+      <label for="token-input">Expo access token</label>
+      <div class="token-row">
+        <input id="token-input" type="password" placeholder="paste your token here" autocomplete="off" />
+        <button id="token-toggle" type="button" class="ghost-btn" aria-label="Show token">show</button>
+      </div>
+      <p class="hint">
+        Create one free at
+        <a href="https://expo.dev/settings/access-tokens" target="_blank" rel="noopener">expo.dev/settings/access-tokens</a>.
+        Only sent to Expo's API directly from this server — never written to disk.
+      </p>
+      <label class="checkbox-row">
+        <input id="remember-token" type="checkbox" />
+        Remember on this device
+      </label>
+    </div>
+
+    <div class="field">
+      <label for="package-input">Android package name <span class="optional">(optional)</span></label>
+      <input id="package-input" type="text" placeholder="com.yourname.appname" />
+    </div>
+
+    <div id="dropzone" class="dropzone">
+      <div class="dropzone-icon">↑</div>
+      <p class="dropzone-title">Drop your Expo project ZIP here</p>
+      <p class="dropzone-sub">or click to browse</p>
+      <p class="dropzone-note">Must include package.json with "expo" as a dependency · Max 150MB</p>
+      <input id="file-input" type="file" accept=".zip" hidden />
+    </div>
+
+    <div id="selected-file" class="selected-file hidden"></div>
+
+    <button id="build-btn" class="build-btn" disabled>Send to EAS Build</button>
+    <p id="submit-error" class="submit-error hidden"></p>
+  </section>
+
+  <section class="card history-card">
+    <h2>Build history</h2>
+    <p class="lede small">Tracked in this browser and on this server's local log.</p>
+    <ul id="history-list" class="history-list">
+      <li class="history-empty" id="history-empty">No builds yet.</li>
+    </ul>
+  </section>
+
+  <section class="card how-card">
+    <h2>How it actually works</h2>
+    <ol class="how-list">
+      <li>Your ZIP is unpacked on this server just long enough to patch <code>app.json</code> / <code>eas.json</code>.</li>
+      <li>The server calls Expo's <code>eas-cli</code> on your behalf, authenticated with your token.</li>
+      <li><code>eas-cli</code> uploads your project straight to Expo's cloud build machines — the compiling happens there, not here.</li>
+      <li>This page polls Expo's API for status until your APK is ready to download.</li>
+    </ol>
+  </section>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
