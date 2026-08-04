@@ -46,11 +46,16 @@ app.get("/api/history", (req, res) => {
 
 // ---------- helpers ----------
 
+// Resolve eas-cli's binary from THIS app's node_modules, not the uploaded
+// project's folder. npx would look relative to `cwd` (the extracted user
+// project) and fail to find it there, even though it's installed here.
+const EAS_BIN = path.join(__dirname, "node_modules", ".bin", "eas");
+
 function runCli(args, cwd, token) {
   return new Promise((resolve, reject) => {
     execFile(
-      "npx",
-      ["--no-install", "eas-cli", ...args],
+      EAS_BIN,
+      [...args],
       {
         cwd,
         env: { ...process.env, EXPO_TOKEN: token, CI: "1" },
