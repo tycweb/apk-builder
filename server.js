@@ -10,6 +10,14 @@ const fetch = require("node-fetch");
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+// Bump this string every time server.js changes. Lets you confirm from the
+// page itself whether a new deploy actually went live, instead of guessing.
+const SERVER_BUILD = "2026-08-05-v5-owner-fix";
+
+app.get("/api/version", (req, res) => {
+  res.json({ build: SERVER_BUILD, deployedAt: new Date().toISOString() });
+});
+
 const WORKSPACE_DIR = path.join(__dirname, "workspace");
 const HISTORY_FILE = path.join(__dirname, "build-history.json");
 
