@@ -254,4 +254,17 @@
 
   renderHistory();
   resumePendingPolls();
+
+  // Shows the running server's build string, so you can confirm at a
+  // glance whether a redeploy actually picked up the latest server.js.
+  fetch("/api/version")
+    .then((r) => r.json())
+    .then((data) => {
+      document.getElementById("build-marker").textContent =
+        `server build: ${data.build}`;
+    })
+    .catch(() => {
+      document.getElementById("build-marker").textContent =
+        "couldn't reach server to check version";
+    });
 })();
